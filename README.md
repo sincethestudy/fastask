@@ -23,13 +23,13 @@ FastAsk can be used directly from the command line:
 More examples:
 
 ```bash
-ask "find ip address"
+>>> ask "find ip address"
 * `curl ifconfig.me`: This command fetches your public IP address.
 * `ip addr show`: This command shows your local IP address.
 ```
 
 ```bash
-ask "convert video to audio using ffmpeg"
+>>> ask "convert video to audio using ffmpeg"
 * `ffmpeg -i input.mp4 -vn -ab 320k -ar 44100 -y output.mp3`: This command converts a video file (input.mp4) to an audio file (output.mp3) using ffmpeg.
 ```
 
