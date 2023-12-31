@@ -34,6 +34,8 @@ def is_configured():
         return False
 
 def config_mode():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
     questions = [
         inquirer.List('options',
                       message="What do you want to do?",
@@ -55,7 +57,8 @@ def config_mode():
         print("Downloading and setting up the local model. This may take a minute or so..")
         try:
             subprocess.check_call(['ollama', '--version'])
-            subprocess.run(['ollama', 'create', 'fastask-preset', '-f', './Modelfile'])
+            subprocess.run(['ollama', 'create', 'fastask-preset', '-f', os.path.join(script_dir, 'Modelfile')])
+
         except subprocess.CalledProcessError:
             print("Ollama is not installed. Please install it following the instructions at https://github.com/jmorganca/ollama?tab=readme-ov-file#:~:text=MIT%20license-,Ollama,-Get%20up%20and")
             return
@@ -111,10 +114,27 @@ def use_local(q):
     subprocess.run(['ollama', 'run', 'fastask-preset', q])
 
 def main():
-    parser = argparse.ArgumentParser(description='Your description here')
-    parser.add_argument('--reset', action='store_true', help='Reset the configuration')
-    parser.add_argument('question', nargs='*', help='Your question here')  # Add this line
+    parser = argparse.ArgumentParser(
+        description='This is a command-line tool that answers questions using OpenAI or a local model.',
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument(
+        '--reset', 
+        action='store_true', 
+        help='Reset the configuration to its default state.'
+    )
+    parser.add_argument(
+        'question', 
+        nargs='*', 
+        help='Enter the question you want to ask.'
+    )
     args = parser.parse_args()
+
+    
+    # If no arguments were passed, print the help message and exit
+    if len(sys.argv) == 1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
 
     if args.reset:
         config_mode()
