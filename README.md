@@ -40,7 +40,7 @@ FastAsk can be configured to use either OpenAI's GPT-4 model or a local model. T
 To configure FastAsk, run the command with the `--reset` flag:
 
 ```bash
-ask --reset
+>>> ask --reset
 ```
 
 You will be prompted to choose between using your own OpenAI API key or a local model with Ollama. If you choose to use your own OpenAI API key, you will be asked to enter it.
