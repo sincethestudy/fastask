@@ -7,12 +7,19 @@ import inquirer
 import argparse
 import subprocess
 import shlex
+import tempfile
+
+modelfile_path = os.path.expanduser('~/.config/ask/Modelfile')
 
 config = configparser.ConfigParser()
 
-config_path = os.path.expanduser('~/.config/ask/config.ini')
-os.makedirs(os.path.expanduser('~/.config/ask/'), exist_ok=True)
+config_path = os.path.expanduser('~/.config/fastask/config.ini')
+os.makedirs(os.path.expanduser('~/.config/fastask/'), exist_ok=True)
 config.read(config_path)
+
+temp_dir = tempfile.gettempdir()
+history_file_path = os.path.join(temp_dir, 'ask_history.txt')
+
 
 def is_openai_configured():
     if config['OPENAI']['API_KEY'] == '':
@@ -37,7 +44,6 @@ def is_configured():
         return False
 
 def config_mode():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
 
     questions = [
         inquirer.List('options',
@@ -60,8 +66,7 @@ def config_mode():
         print("Downloading and setting up the local model. This may take a minute or so..")
         try:
             subprocess.check_call(['ollama', '--version'])
-            subprocess.run(['ollama', 'create', 'fastask-preset', '-f', os.path.expanduser('~/.config/ask/Modelfile')])
-
+            subprocess.run(['ollama', 'create', 'fastask-preset', '-f', modelfile_path])
         except subprocess.CalledProcessError:
             print("Ollama is not installed. Please install it following the instructions at https://github.com/jmorganca/ollama?tab=readme-ov-file#:~:text=MIT%20license-,Ollama,-Get%20up%20and")
             return
@@ -70,7 +75,10 @@ def config_mode():
             config.write(configfile)
 
 def use_openai(client, q):
-    system_prompt = """
+    history = get_last_n_history(5)  # Get the last 5 entries
+    history_prompt = "\n".join(history)
+
+    system_prompt = f"""
 You are a command line utility that answers questions quickly and briefly. Don't use any markdown or other formatting. The user is likely looking for a cli command or usage of some tool, attempt to answer the question with just the command that would be relavent, and only if 100% needed, with a single sentence. If you give the user a command, give a brief explanation of what it does. If there were a few commands you could have given, show them all, and explain the difference between them. Remember that you print to a console, so make it easy to read when possible.
 
 Here are some example of good answers:
@@ -97,26 +105,80 @@ Your Answer:
 Most important, dont talk, just go.
 """
 
-    completion_stream = client.chat.completions.create(
-    messages=[
+    messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": "Answer this as briefly as possible: " + q},
-    ],
-    model="gpt-4-1106-preview",
-    stream=True,
+    ]
+
+    if history:
+        messages.insert(1, {"role": "user", "content": "For context, here are recent question and answers, so if the current question is ambigous see if theres context here.\n\n" + history_prompt})
+
+    completion_stream = client.chat.completions.create(
+        messages=messages,
+        model="gpt-4-1106-preview",
+        stream=True,
     )
 
-    print()
+    response = ""
     for chunk in completion_stream:
+        response += chunk.choices[0].delta.content or ""
         print(chunk.choices[0].delta.content or "", end="")
 
     print()
     print()
+    add_to_history(q, response)
 
 def use_local(q):
-    subprocess.run(['ollama', 'run', 'fastask-preset', q])
+    history = get_last_n_history(5)  # Get the last 5 entries
+    history_prompt = "\n".join(history)
+
+    command = ['ollama', 'run', 'fastask-preset', q]
+    if history:
+        command = ['ollama', 'run', 'fastask-preset', "For context, here are recent question and answers\n\n" + history_prompt + "\n\n" + q]
+
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+
+    output = ""
+    while True:
+        char = process.stdout.read(1)
+        if not char:  # End of output
+            break
+        print(char, end='')  # print to stdout in real-time
+        output += char  # capture output
+
+    process.stdout.close()
+    process.wait()
+
+    add_to_history(q, output) 
+
+def add_to_history(question, answer):
+    with open(history_file_path, 'a') as f:
+        f.write(f"Question: {question}\nAnswer: {answer}\n\n")
+
+    # Check if history has more than 10 entries
+    with open(history_file_path, 'r') as f:
+        lines = f.readlines()
+    blocks = "".join(lines).split("\n\n")[:-1]  # Split by empty lines
+    if len(blocks) > 10:
+        # Delete the oldest entry
+        with open(history_file_path, 'w') as f:
+            f.write("\n\n".join(blocks[1:]) + "\n\n")
+
+def get_last_n_history(n):
+    with open(history_file_path, 'r') as f:
+        lines = f.readlines()
+
+    blocks = "".join(lines).split("\n\n")[:-1]  # Split by empty lines
+    return blocks[-n:]
+
+def clear_history():
+    if os.path.exists(history_file_path):
+        os.remove(history_file_path)
+    with open(history_file_path, 'w') as f:
+        pass  # Create the file if it doesn't exist
 
 def main():
+
     parser = argparse.ArgumentParser(
         description='This is a command-line tool that answers questions using OpenAI or a local model.',
         formatter_class=argparse.RawTextHelpFormatter
