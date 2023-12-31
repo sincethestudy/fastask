@@ -1,6 +1,6 @@
 # FastAsk
 
-FastAsk is a Python package that allows you to ask questions and get brief answers quickly. It uses OpenAI's GPT-4 model or a local model to generate responses. You can use it as a command-line utility or integrate it into your own Python projects.
+FastAsk is a Python package that allows you to ask questions and get brief answers quickly. It uses OpenAI's GPT-4 model or a local model to generate responses. You can use it as a command-line utility.
 
 ## Installation
 
