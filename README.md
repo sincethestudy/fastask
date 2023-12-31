@@ -12,7 +12,8 @@ FastAsk can be installed using pip:
 
 ```bash
 pip install fastask
-```~~
+```
+~~
 
 ## Usage
 
