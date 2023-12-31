@@ -15,12 +15,6 @@ pip install fastask
 FastAsk can be used directly from the command line:
 
 ```bash
-ask "Your question here"
-```
-
-For example, if you want to list all items in the current directory sorted by modification time, you can ask:
-
-```bash
 ask "list items in dir by date"
 ```
 
@@ -29,12 +23,6 @@ This will output:
 ```cli
 * `ls -lt`: This command lists all items in the current directory sorted by modification time, newest first.  
 * `ls -ltr`: This command lists all items in the current directory sorted by modification time, oldest first.
-```
-
-You can also reset the configuration with the `--reset` flag:
-
-```bash
-ask --reset
 ```
 
 ## Configuration
