@@ -9,7 +9,10 @@ import subprocess
 import shlex
 
 config = configparser.ConfigParser()
-config.read('config.ini')
+
+config_path = os.path.expanduser('~/.config/ask/config.ini')
+os.makedirs(os.path.expanduser('~/.config/ask/'), exist_ok=True)
+config.read(config_path)
 
 def is_openai_configured():
     if config['OPENAI']['API_KEY'] == '':
@@ -50,20 +53,20 @@ def config_mode():
             api_key = input("Please enter your OpenAI API Key: ")
         config['OPENAI'] = {'API_KEY': api_key}
         config['MODES'] = {'MODE': 'OPENAI'}
-        with open('config.ini', 'w') as configfile:
+        with open(config_path, 'w') as configfile:
             config.write(configfile)
 
     elif answers['options'] == 'Use local model with Ollama':
         print("Downloading and setting up the local model. This may take a minute or so..")
         try:
             subprocess.check_call(['ollama', '--version'])
-            subprocess.run(['ollama', 'create', 'fastask-preset', '-f', os.path.join(script_dir, 'Modelfile')])
+            subprocess.run(['ollama', 'create', 'fastask-preset', '-f', os.path.expanduser('~/.config/ask/Modelfile')])
 
         except subprocess.CalledProcessError:
             print("Ollama is not installed. Please install it following the instructions at https://github.com/jmorganca/ollama?tab=readme-ov-file#:~:text=MIT%20license-,Ollama,-Get%20up%20and")
             return
         config['MODES'] = {'MODE': 'LOCAL'}
-        with open('config.ini', 'w') as configfile:
+        with open(config_path, 'w') as configfile:
             config.write(configfile)
 
 def use_openai(client, q):
