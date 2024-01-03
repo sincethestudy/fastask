@@ -1,6 +1,9 @@
 # file: setup.py
 from setuptools import setup
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(
     name='fastask',
     packages=['fastask'],
@@ -18,4 +21,6 @@ setup(
             'ask = fastask.ask:main',
         ],
     },
+     long_description=long_description,
+    long_description_content_type="text/markdown",
 )
