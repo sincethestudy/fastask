@@ -4,8 +4,8 @@ from setuptools import setup
 setup(
     name='fastask',
     packages=['fastask'],
-    version='0.2',
-    py_modules=['ask'],
+    version='0.2.1',
+    py_modules=['fastask.ask'],
     include_package_data=True,
     package_data={'fastask': ['Modelfile']},
     install_requires=[
@@ -15,7 +15,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'ask = ask:main',
+            'ask = fastask.ask:main',
         ],
     },
 )
