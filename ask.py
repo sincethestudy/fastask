@@ -165,6 +165,11 @@ def add_to_history(question, answer):
             f.write("\n\n".join(blocks[1:]) + "\n\n")
 
 def get_last_n_history(n):
+    # Check if the file exists, if not, create it
+    if not os.path.exists(history_file_path):
+        with open(history_file_path, 'w') as f:
+            pass
+
     with open(history_file_path, 'r') as f:
         lines = f.readlines()
 
