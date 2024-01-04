@@ -4,12 +4,8 @@ FastAsk is a Python package that allows you to ask questions and get brief answe
 
 ## Installation
 
-**NOTE** 
 
-ITS NOT ON PYPI YET CUZ THEY WONT LET ME MAKE AN ACCOUNT, FOR NOW JUST GIT CLONE AND DO "pip3 install ." IN THE DIR.
-
-
-~~FastAsk can be installed using pip:~~ see above
+FastAsk can be installed using pip:
 
 ```bash
 pip install fastask
