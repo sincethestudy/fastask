@@ -117,7 +117,7 @@ Most important, dont talk, just go.
 
     completion_stream = client.chat.completions.create(
         messages=messages,
-        model="gpt-4-1106-preview",
+        model="gpt-4",
         stream=True,
     )
 
@@ -197,6 +197,11 @@ def main():
         help='Reset the configuration to its default state.'
     )
     parser.add_argument(
+        '--clear', 
+        action='store_true', 
+        help='Clear the history of questions and answers.'
+    )
+    parser.add_argument(
         'question', 
         nargs='*', 
         help='Enter the question you want to ask.'
@@ -211,6 +216,11 @@ def main():
 
     if args.reset:
         config_mode()
+        exit()
+
+    if args.clear:
+        clear_history()
+        print("FastAsk History cleared.")
         exit()
     
     question = shlex.join(args.question)  # Change this line

@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 setup(
     name='fastask',
     packages=['fastask'],
-    version='0.2.6',
+    version='0.2.7',
     py_modules=['fastask.ask'],
     include_package_data=True,
     package_data={'fastask': ['Modelfile']},
