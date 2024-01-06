@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 setup(
     name='fastask',
     packages=['fastask'],
-    version='0.2.2',
+    version='0.2.6',
     py_modules=['fastask.ask'],
     include_package_data=True,
     package_data={'fastask': ['Modelfile']},
@@ -21,6 +21,7 @@ setup(
             'ask = fastask.ask:main',
         ],
     },
-     long_description=long_description,
+    description='A fast and easy tool for asking questions via command line',
+    long_description=long_description,
     long_description_content_type="text/markdown",
 )

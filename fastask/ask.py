@@ -1,4 +1,5 @@
-# file: ask.py
+#!/usr/bin/env python3
+
 import sys
 import os
 from openai import OpenAI
@@ -9,7 +10,10 @@ import subprocess
 import shlex
 import tempfile
 
-modelfile_path = os.path.expanduser('~/.config/ask/Modelfile')
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+modelfile_path = os.path.join(current_script_dir, "Modelfile")
+# modelfile_path = os.path.expanduser('./Modelfile')
+
 
 config = configparser.ConfigParser()
 
@@ -34,9 +38,6 @@ def is_configured():
 
         if config['MODES']['MODE'] == 'OPENAI':
             return is_openai_configured()
-
-        elif config['MODES']['MODE'] == 'GLOBE':
-            return True
 
         elif config['MODES']['MODE'] == 'LOCAL':
             return True
@@ -67,8 +68,10 @@ def config_mode():
         try:
             subprocess.check_call(['ollama', '--version'])
             subprocess.run(['ollama', 'create', 'fastask-preset', '-f', modelfile_path])
-        except subprocess.CalledProcessError:
-            print("Ollama is not installed. Please install it following the instructions at https://github.com/jmorganca/ollama?tab=readme-ov-file#:~:text=MIT%20license-,Ollama,-Get%20up%20and")
+        except:
+            print("Ollama is not installed.")
+            print("Please install it following the instructions at:")
+            print("\033[4;34mhttps://github.com/jmorganca/ollama\033[0m")
             return
         config['MODES'] = {'MODE': 'LOCAL'}
         with open(config_path, 'w') as configfile:
