@@ -9,7 +9,6 @@ import argparse
 import subprocess
 import shlex
 import tempfile
-import platform
 
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
 modelfile_path = os.path.join(current_script_dir, "Modelfile")
