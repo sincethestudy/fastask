@@ -9,10 +9,10 @@ import argparse
 import subprocess
 import shlex
 import tempfile
+import platform
 
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
 modelfile_path = os.path.join(current_script_dir, "Modelfile")
-# modelfile_path = os.path.expanduser('./Modelfile')
 
 
 config = configparser.ConfigParser()
@@ -184,6 +184,7 @@ def clear_history():
         os.remove(history_file_path)
     with open(history_file_path, 'w') as f:
         pass  # Create the file if it doesn't exist
+
 
 def main():
 
