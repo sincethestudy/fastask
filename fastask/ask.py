@@ -7,7 +7,6 @@ import configparser
 import inquirer
 import argparse
 import subprocess
-import shlex
 import tempfile
 
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -256,7 +255,7 @@ def main():
         print("FastAsk History cleared.")
         exit()
     
-    question = shlex.join(args.question)  # Change this line
+    question = ' '.join(args.question)
 
     if not is_configured():
         config_mode()
