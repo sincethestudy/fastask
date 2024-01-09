@@ -54,6 +54,8 @@ If you choose to use a local model with Ollama, FastAsk will download and set up
 
 If you choose to use your own OpenAI API key, you will need to enter it when prompted. The API key is stored in the `config.ini` file and is used to authenticate with the OpenAI API.
 
+By default, `gpt-4-1106-preview` is used. If you want to change the model, add a `MODEL=[model_name]` to the `config.ini` file under the `[OPENAI]` section.
+
 ## Contributing
 
 Contributions are welcome! Please submit a pull request or create an issue to discuss any changes you would like to make.
