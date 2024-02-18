@@ -8,11 +8,11 @@ import inquirer
 import argparse
 import subprocess
 import tempfile
-import ollama
 import platform
+import json
+import requests
 
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
-modelfile_path = os.path.join(current_script_dir, "Modelfile")
 
 
 config = configparser.ConfigParser()
@@ -22,7 +22,7 @@ os.makedirs(os.path.expanduser('~/.config/fastask/'), exist_ok=True)
 config.read(config_path)
 
 temp_dir = tempfile.gettempdir()
-history_file_path = os.path.join(temp_dir, 'ask_history.txt')
+history_file_path = os.path.join(temp_dir, 'ask_history.json')
 
 
 def is_openai_configured():
@@ -79,164 +79,90 @@ def config_mode():
             config.write(configfile)
 
 def use_openai(client, q):
-    history = get_last_n_history(5)  # Get the last 5 entries
-    history_prompt = ", ".join(history)
 
     messages = []
 
     # System Prompt
     messages.append({
-        "role": "system", "content": "You are a command line utility that answers questions quickly and briefly. Don't use any markdown or other formatting. The user is likely looking for a cli command or usage of some tool, attempt to answer the question with just the command that would be relavent, and only if 100% needed, with a single sentence description after the command with a ':'. If there were a few commands you could have given, show them all. Remember that you print to a console, so make it easy to read when possible." + "the user is on the operating system: " + platform.system()
+        "role": "system", "content": "You are a command line utility that answers questions quickly and briefly. Don't use any markdown or other formatting. The user is likely looking for a cli command or usage of some tool, attempt to answer the question with just the command that would be relavent, and only if 100% needed, with a single sentence description after the command with a ':'. If there were a few commands you could have given, show them all. Remember that you print to a console, so make it easy to read when possible." + "the user is on the operating system: " + platform.system() + ". Bias towards short answers always, each row should fit in one unwrapped line of the terminal, less than 40 characters! Only 3 rows maximum."
     })
 
     # Fake Examples
     messages.extend([
         {"role": "user", "content": "how do i convert image size in ffmpeg"},
         {"role": "assistant", "content":"""`ffmpeg -i input.jpg -filter:v scale=h=1024 output.jpg`: Resizes the image to a height of 1024 pixels.
-`ffmpeg -i input.jpg -filter:v scale=w:h=1:1 output.jpg`: Resizes the image to a width and height that are equal, such as 512x512.
-`ffmpeg -i input.jpg -filter:v scale=force_original output.jpg`: Resizes the image while preserving its original aspect ratio."""},
+`ffmpeg -i input.jpg -filter:v scale=w:h=1:1 output.jpg`: Resizes image to width and height that are equal
+`ffmpeg -i input.jpg -filter:v scale=force_original output.jpg`: preserving original aspect ratio."""},
         {"role": "user", "content": "list items in dir by date"},
         {"role": "assistant", "content":"""`ls -lt`: Lists all items in the current directory sorted by modification time, newest first.
-`ls -ltr`: Lists all items in the current directory sorted by modification time, oldest first."},
+`ls -ltr`: added 'r' sorts by oldest first."},
         {"role": "user", "content": "how do i make a new docker to run a fresh ubuntu to test on"},
-        {"role": "assistant", "content":"`docker run -it ubuntu bash`: Runs a new container with the latest Ubuntu image and opens a bash shell.
-        `docker run -it --rm ubuntu bash`: Runs a new container with the latest Ubuntu image, opens a bash shell, and removes the container when it exits."""},
+        {"role": "assistant", "content":"`docker run -it ubuntu bash`: also opens a bash shell.
+`docker run -it --rm ubuntu bash`: --rm removes the container when it exits."""},
         {"role": "user", "content": "find text in files in linux"},
-        {"role": "assistant", "content":"""`grep -r 'search_term' /path/to/directory`: Searches for 'search_term' in all files in the specified directory.
-            `grep -r 'search_term' /path/to/directory --include=*.txt`: Searches for 'search_term' in all .txt files in the specified directory."""},
+        {"role": "assistant", "content":"""`grep -r 'search_term' /path/to/directory`
+`grep -r 'search_term' /path/to/directory --include=*.txt`"""},
         {"role": "user", "content": "how to change file permissions in linux"},
-        {"role": "assistant", "content":"""`chmod 777 file`: Gives read, write, and execute permissions to everyone for the specified file.
-            `chmod 755 file`: Gives read, write, and execute permissions to the owner and read and execute permissions to everyone else for the specified file."""}
+        {"role": "assistant", "content":"""`chmod 777 file`
+`chmod 755 file`"""}
 
     ])
 
-    if history:
-        # History
-        messages.append({
-            "role": "user", "content": "Here is the past few commands that I have asked. If i referring to a previous command, it will be one of these, not our previous messages since those were from a while ago. I might refer to them so if it seems like my next question is missing context just look here: " + history_prompt
-        })
+    history = get_last_n_history(5)  # Get the last 5 entries
 
-    # User Question
+    if history:
+        for entry in history:
+            messages.extend([
+                {"role": "user", "content": entry["Question"]},
+                {"role": "assistant", "content": entry["Answer"]}
+            ])
+
     messages.append({
         "role": "user", "content": q
     })
 
+    response = requests.post(url="https://fastask.fly.dev/itsfast", json={"messages": messages}).json()
+    print(response['response'])
 
-    completion_stream = client.chat.completions.create(
-        messages=messages,
-        model="gpt-4-1106-preview",
-        stream=True,
-    )
-
-    response = ""
-    for chunk in completion_stream:
-        response += chunk.choices[0].delta.content or ""
-        print(chunk.choices[0].delta.content or "", end="")
 
     print()
     print()
-    add_to_history(q, response)
-
-def use_local(q):
-    history = get_last_n_history(5)  # Get the last 5 entries
-    history_prompt = ", ".join(history)
-
-    messages = []
-
-    # System Prompt
-    messages.append({
-        "role": "system", "content": "You are a command line utility that answers questions quickly and briefly. Don't use any markdown or other formatting. The user is likely looking for a cli command or usage of some tool, attempt to answer the question with just the command that would be relavent, and only if 100% needed, with a single sentence description after the command with a ':'. If there were a few commands you could have given, show them all. Remember that you print to a console, so make it easy to read when possible." + "the user is on the operating system: " + platform.system()
-    })
-
-    # Fake Examples
-    messages.extend([
-        {"role": "user", "content": "how do i convert image size in ffmpeg"},
-        {"role": "assistant", "content":"""`ffmpeg -i input.jpg -filter:v scale=h=1024 output.jpg`: Resizes the image to a height of 1024 pixels.
-`ffmpeg -i input.jpg -filter:v scale=w:h=1:1 output.jpg`: Resizes the image to a width and height that are equal, such as 512x512.
-`ffmpeg -i input.jpg -filter:v scale=force_original output.jpg`: Resizes the image while preserving its original aspect ratio."""},
-        {"role": "user", "content": "list items in dir by date"},
-        {"role": "assistant", "content":"""`ls -lt`: Lists all items in the current directory sorted by modification time, newest first.
-`ls -ltr`: Lists all items in the current directory sorted by modification time, oldest first."},
-        {"role": "user", "content": "how do i make a new docker to run a fresh ubuntu to test on"},
-        {"role": "assistant", "content":"`docker run -it ubuntu bash`: Runs a new container with the latest Ubuntu image and opens a bash shell.
-        `docker run -it --rm ubuntu bash`: Runs a new container with the latest Ubuntu image, opens a bash shell, and removes the container when it exits."""},
-        {"role": "user", "content": "find text in files in linux"},
-        {"role": "assistant", "content":"""`grep -r 'search_term' /path/to/directory`: Searches for 'search_term' in all files in the specified directory.
-            `grep -r 'search_term' /path/to/directory --include=*.txt`: Searches for 'search_term' in all .txt files in the specified directory."""},
-        {"role": "user", "content": "how to change file permissions in linux"},
-        {"role": "assistant", "content":"""`chmod 777 file`: Gives read, write, and execute permissions to everyone for the specified file.
-            `chmod 755 file`: Gives read, write, and execute permissions to the owner and read and execute permissions to everyone else for the specified file."""}
-
-    ])
-
-    if history:
-        # History
-        messages.append({
-            "role": "user", "content": "Here is the past few commands that I have asked, I might refer to them so if it seems like my next question is missing context just look here: " + history_prompt
-        })
-
-    # User Question
-    messages.append({
-        "role": "user", "content": "Cool, my next question is "  + q + ". Please answer like you did above, with no explanation before or after, thanks!"
-    })
-
-    try:
-        completion_stream = ollama.chat(
-            messages=messages,
-            model='mistral',
-            stream=True,
-        )
-
-        response = ""
-        for chunk in completion_stream:
-            response += chunk['message']['content']
-            print(chunk['message']['content'], end='', flush=True)
-
-    except:
-        print("Error with local model, are you running Ollama?")
-        try:
-            subprocess.check_call(['ollama', '--version'])
-
-            try:
-                subprocess.run(["ollama", "run", "mistral"], timeout=0.5)
-
-            except subprocess.TimeoutExpired:
-              print("starting ollama... please wait a moment and try again.")
-
-        except:
-            print("ollama is not installed.")
-            print("Please download it here:")
-            print("\033[4;34mhttps://ollama.com\033[0m")
-            return
-
-    print()
-    print()
-    add_to_history(q, response)
-
+    add_to_history(q, response['response'])
+    
 def add_to_history(question, answer):
-    with open(history_file_path, 'a') as f:
-        f.write(f"Question: {question}\nAnswer: {answer}\n\n")
+    history_entry = {"Question": question, "Answer": answer}
 
-    # Check if history has more than 10 entries
-    with open(history_file_path, 'r') as f:
-        lines = f.readlines()
-    blocks = "".join(lines).split("\n\n")[:-1]  # Split by empty lines
-    if len(blocks) > 10:
-        # Delete the oldest entry
-        with open(history_file_path, 'w') as f:
-            f.write("\n\n".join(blocks[1:]) + "\n\n")
-
-def get_last_n_history(n):
-    # Check if the file exists, if not, create it
     if not os.path.exists(history_file_path):
         with open(history_file_path, 'w') as f:
-            pass
+            json.dump([history_entry], f)
+    else:
+        try:
+            with open(history_file_path, 'r') as f:
+                history = json.load(f)
+        except json.JSONDecodeError:
+            history = []
+
+        history.append(history_entry)
+
+        if len(history) > 5:
+            history = history[-5:]
+
+        with open(history_file_path, 'w') as f:
+            json.dump(history, f)
+
+def get_last_n_history(n):
+    # Check if the file exists, if not, return an empty list
+    if not os.path.exists(history_file_path):
+        return []
 
     with open(history_file_path, 'r') as f:
-        lines = f.readlines()
+        try:
+            history = json.load(f)
+        except json.JSONDecodeError:
+            return []
 
-    blocks = "".join(lines).split("\n\n")[:-1]  # Split by empty lines
-    return blocks[-n:]
+    # Return the last n entries from the history
+    return history[-n:]
 
 def clear_history():
     if os.path.exists(history_file_path):
@@ -291,13 +217,14 @@ def main():
         return
 
     if config['MODES']['MODE'] == 'OPENAI':
+
         client = OpenAI(
             api_key=config['OPENAI']['API_KEY'],
         )
         use_openai(client, question)
 
     elif config['MODES']['MODE'] == 'LOCAL':
-        use_local(question)
+        print("local not supported anymore")
 
 if __name__ == '__main__':
     main()
