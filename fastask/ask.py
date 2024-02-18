@@ -8,6 +8,8 @@ import inquirer
 import argparse
 import subprocess
 import tempfile
+import ollama
+import platform
 
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
 modelfile_path = os.path.join(current_script_dir, "Modelfile")
@@ -65,11 +67,12 @@ def config_mode():
         print("Downloading and setting up the local model. This may take a minute or so..")
         try:
             subprocess.check_call(['ollama', '--version'])
-            subprocess.run(['ollama', 'create', 'fastask-preset', '-f', modelfile_path])
+            print("Ollama is already installed. Downloading the model..")
+            subprocess.run(['ollama', 'pull', 'mistral'], check=True)
         except:
-            print("Ollama is not installed.")
-            print("Please install it following the instructions at:")
-            print("\033[4;34mhttps://github.com/jmorganca/ollama\033[0m")
+            print("ollama is not installed.")
+            print("Please download it here:")
+            print("\033[4;34mhttps://ollama.com\033[0m")
             return
         config['MODES'] = {'MODE': 'LOCAL'}
         with open(config_path, 'w') as configfile:
@@ -77,75 +80,47 @@ def config_mode():
 
 def use_openai(client, q):
     history = get_last_n_history(5)  # Get the last 5 entries
-    history_prompt = "\n".join(history)
+    history_prompt = ", ".join(history)
 
-    system_prompt = f"""
-You are a command line utility that answers questions quickly and briefly. Don't use any markdown or other formatting. The user is likely looking for a cli command or usage of some tool, attempt to answer the question with just the command that would be relavent, and only if 100% needed, with a single sentence description after the command with a ':'. If there were a few commands you could have given, show them all. Remember that you print to a console, so make it easy to read when possible.
+    messages = []
 
-Here is how your responses should look:
+    # System Prompt
+    messages.append({
+        "role": "system", "content": "You are a command line utility that answers questions quickly and briefly. Don't use any markdown or other formatting. The user is likely looking for a cli command or usage of some tool, attempt to answer the question with just the command that would be relavent, and only if 100% needed, with a single sentence description after the command with a ':'. If there were a few commands you could have given, show them all. Remember that you print to a console, so make it easy to read when possible." + "the user is on the operating system: " + platform.system()
+    })
 
-**EXAMPLE 1**
-
-<Users Question>
-how do i convert image size in ffmpeg
-
-<Your Answer>
-`ffmpeg -i input.jpg -filter:v scale=h=1024 output.jpg`: Resizes the image to a height of 1024 pixels.
+    # Fake Examples
+    messages.extend([
+        {"role": "user", "content": "how do i convert image size in ffmpeg"},
+        {"role": "assistant", "content":"""`ffmpeg -i input.jpg -filter:v scale=h=1024 output.jpg`: Resizes the image to a height of 1024 pixels.
 `ffmpeg -i input.jpg -filter:v scale=w:h=1:1 output.jpg`: Resizes the image to a width and height that are equal, such as 512x512.
-`ffmpeg -i input.jpg -filter:v scale=force_original output.jpg`: Resizes the image while preserving its original aspect ratio.
+`ffmpeg -i input.jpg -filter:v scale=force_original output.jpg`: Resizes the image while preserving its original aspect ratio."""},
+        {"role": "user", "content": "list items in dir by date"},
+        {"role": "assistant", "content":"""`ls -lt`: Lists all items in the current directory sorted by modification time, newest first.
+`ls -ltr`: Lists all items in the current directory sorted by modification time, oldest first."},
+        {"role": "user", "content": "how do i make a new docker to run a fresh ubuntu to test on"},
+        {"role": "assistant", "content":"`docker run -it ubuntu bash`: Runs a new container with the latest Ubuntu image and opens a bash shell.
+        `docker run -it --rm ubuntu bash`: Runs a new container with the latest Ubuntu image, opens a bash shell, and removes the container when it exits."""},
+        {"role": "user", "content": "find text in files in linux"},
+        {"role": "assistant", "content":"""`grep -r 'search_term' /path/to/directory`: Searches for 'search_term' in all files in the specified directory.
+            `grep -r 'search_term' /path/to/directory --include=*.txt`: Searches for 'search_term' in all .txt files in the specified directory."""},
+        {"role": "user", "content": "how to change file permissions in linux"},
+        {"role": "assistant", "content":"""`chmod 777 file`: Gives read, write, and execute permissions to everyone for the specified file.
+            `chmod 755 file`: Gives read, write, and execute permissions to the owner and read and execute permissions to everyone else for the specified file."""}
 
-**EXAMPLE 2**
-
-<Users Question>
-list items in dir by date
-
-<Your Answer>
-`ls -lt`: Lists all items in the current directory sorted by modification time, newest first.  
-`ls -ltr`: Lists all items in the current directory sorted by modification time, oldest first.
-
-**EXAMPLE 3**
-
-<Users Question>
-how do i make a new docker to run a fresh ubuntu to test on
-
-<Your Answer>
-`docker run -it ubuntu`
-
-**EXAMPLE 4**
-
-<Users Question>
-how to check disk usage in linux
-
-<Your Answer>
-`df -h`: Shows the amount of disk space used and available on Linux file systems.
-`du -sh *`: Summarizes the disk usage of each file and directory in the current directory.
-
-**EXAMPLE 5**
-
-<Users Question>
-find text in files in linux
-
-<Your Answer>
-`grep 'search_text' /path/to/dir/*`: This command searches for 'search_text' within all files in the specified directory.
-`grep -r 'search_text' /path/to/dir`: This is the same, but searches recursively.
-
-**EXAMPLE 6**
-
-<Users Question>
-how to change file permissions in linux
-
-<Your Answer>
-`chmod 755 filename`: This command changes the permissions of 'filename' to 'rwxr-xr-x' (read, write, and execute for owner, read and execute for group and others).
-`chmod u+x filename`: This command adds execute permission for the user (owner) of 'filename'.
-"""
-
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": "Answer this as briefly as possible: " + q},
-    ]
+    ])
 
     if history:
-        messages.insert(1, {"role": "user", "content": "For context, here are recent question and answers, so if the current question is ambigous see if theres context here.\n\n" + history_prompt})
+        # History
+        messages.append({
+            "role": "user", "content": "Here is the past few commands that I have asked. If i referring to a previous command, it will be one of these, not our previous messages since those were from a while ago. I might refer to them so if it seems like my next question is missing context just look here: " + history_prompt
+        })
+
+    # User Question
+    messages.append({
+        "role": "user", "content": q
+    })
+
 
     completion_stream = client.chat.completions.create(
         messages=messages,
@@ -164,26 +139,79 @@ how to change file permissions in linux
 
 def use_local(q):
     history = get_last_n_history(5)  # Get the last 5 entries
-    history_prompt = "\n".join(history)
+    history_prompt = ", ".join(history)
 
-    command = ['ollama', 'run', 'fastask-preset', q]
+    messages = []
+
+    # System Prompt
+    messages.append({
+        "role": "system", "content": "You are a command line utility that answers questions quickly and briefly. Don't use any markdown or other formatting. The user is likely looking for a cli command or usage of some tool, attempt to answer the question with just the command that would be relavent, and only if 100% needed, with a single sentence description after the command with a ':'. If there were a few commands you could have given, show them all. Remember that you print to a console, so make it easy to read when possible." + "the user is on the operating system: " + platform.system()
+    })
+
+    # Fake Examples
+    messages.extend([
+        {"role": "user", "content": "how do i convert image size in ffmpeg"},
+        {"role": "assistant", "content":"""`ffmpeg -i input.jpg -filter:v scale=h=1024 output.jpg`: Resizes the image to a height of 1024 pixels.
+`ffmpeg -i input.jpg -filter:v scale=w:h=1:1 output.jpg`: Resizes the image to a width and height that are equal, such as 512x512.
+`ffmpeg -i input.jpg -filter:v scale=force_original output.jpg`: Resizes the image while preserving its original aspect ratio."""},
+        {"role": "user", "content": "list items in dir by date"},
+        {"role": "assistant", "content":"""`ls -lt`: Lists all items in the current directory sorted by modification time, newest first.
+`ls -ltr`: Lists all items in the current directory sorted by modification time, oldest first."},
+        {"role": "user", "content": "how do i make a new docker to run a fresh ubuntu to test on"},
+        {"role": "assistant", "content":"`docker run -it ubuntu bash`: Runs a new container with the latest Ubuntu image and opens a bash shell.
+        `docker run -it --rm ubuntu bash`: Runs a new container with the latest Ubuntu image, opens a bash shell, and removes the container when it exits."""},
+        {"role": "user", "content": "find text in files in linux"},
+        {"role": "assistant", "content":"""`grep -r 'search_term' /path/to/directory`: Searches for 'search_term' in all files in the specified directory.
+            `grep -r 'search_term' /path/to/directory --include=*.txt`: Searches for 'search_term' in all .txt files in the specified directory."""},
+        {"role": "user", "content": "how to change file permissions in linux"},
+        {"role": "assistant", "content":"""`chmod 777 file`: Gives read, write, and execute permissions to everyone for the specified file.
+            `chmod 755 file`: Gives read, write, and execute permissions to the owner and read and execute permissions to everyone else for the specified file."""}
+
+    ])
+
     if history:
-        command = ['ollama', 'run', 'fastask-preset', "For context, here are recent question and answers\n\n" + history_prompt + "\n\n" + q]
+        # History
+        messages.append({
+            "role": "user", "content": "Here is the past few commands that I have asked, I might refer to them so if it seems like my next question is missing context just look here: " + history_prompt
+        })
 
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+    # User Question
+    messages.append({
+        "role": "user", "content": "Cool, my next question is "  + q + ". Please answer like you did above, with no explanation before or after, thanks!"
+    })
 
-    output = ""
-    while True:
-        char = process.stdout.read(1)
-        if not char:  # End of output
-            break
-        print(char, end='')  # print to stdout in real-time
-        output += char  # capture output
+    try:
+        completion_stream = ollama.chat(
+            messages=messages,
+            model='mistral',
+            stream=True,
+        )
 
-    process.stdout.close()
-    process.wait()
+        response = ""
+        for chunk in completion_stream:
+            response += chunk['message']['content']
+            print(chunk['message']['content'], end='', flush=True)
 
-    add_to_history(q, output) 
+    except:
+        print("Error with local model, are you running Ollama?")
+        try:
+            subprocess.check_call(['ollama', '--version'])
+
+            try:
+                subprocess.run(["ollama", "run", "mistral"], timeout=0.5)
+
+            except subprocess.TimeoutExpired:
+              print("starting ollama... please wait a moment and try again.")
+
+        except:
+            print("ollama is not installed.")
+            print("Please download it here:")
+            print("\033[4;34mhttps://ollama.com\033[0m")
+            return
+
+    print()
+    print()
+    add_to_history(q, response)
 
 def add_to_history(question, answer):
     with open(history_file_path, 'a') as f:
@@ -224,23 +252,23 @@ def main():
         formatter_class=argparse.RawTextHelpFormatter
     )
     parser.add_argument(
-        '--reset', 
-        action='store_true', 
+        '--reset',
+        action='store_true',
         help='Reset the configuration to its default state.'
     )
     parser.add_argument(
-        '--clear', 
-        action='store_true', 
+        '--clear',
+        action='store_true',
         help='Clear the history of questions and answers.'
     )
     parser.add_argument(
-        'question', 
-        nargs='*', 
+        'question',
+        nargs='*',
         help='Enter the question you want to ask.'
     )
     args = parser.parse_args()
 
-    
+
     # If no arguments were passed, print the help message and exit
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
@@ -254,7 +282,7 @@ def main():
         clear_history()
         print("FastAsk History cleared.")
         exit()
-    
+
     question = ' '.join(args.question)
 
     if not is_configured():
