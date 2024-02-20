@@ -39,7 +39,6 @@ More examples:
 * `ffmpeg -i input.mp4 -vn -ab 320k -ar 44100 -y output.mp3`: This command converts a video file (input.mp4) to an audio file (output.mp3) using ffmpeg.
 ```
 
-<<<<<<< HEAD
 ## Clearing History
 ```bash
 >>> ask --clear
@@ -51,8 +50,6 @@ FastAsk History Cleared.
 
 Contributions are welcome! Please submit a pull request or create an issue to discuss any changes you would like to make.
 
-=======
->>>>>>> 48f77038ae19a22216dbb7401ad6090f17c2e4ac
 ## License
 
 FastAsk is licensed under the MIT License. See the `LICENSE` file for more details.
