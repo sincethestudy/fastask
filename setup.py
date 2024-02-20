@@ -7,14 +7,11 @@ with open("README.md", "r") as fh:
 setup(
     name='fastask',
     packages=['fastask'],
-    version='0.3.0',
+    version='0.3.6',
     py_modules=['fastask.ask'],
     include_package_data=True,
     install_requires=[
-        'openai',
-        'configparser',
-        'inquirer',
-        'ollama',
+        'requests',
     ],
     entry_points={
         'console_scripts': [

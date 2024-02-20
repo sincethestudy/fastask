@@ -34,25 +34,12 @@ More examples:
 * `ffmpeg -i input.mp4 -vn -ab 320k -ar 44100 -y output.mp3`: This command converts a video file (input.mp4) to an audio file (output.mp3) using ffmpeg.
 ```
 
-## Configuration
-
-FastAsk can be configured to use either OpenAI's GPT-4 model or a local model. The configuration is stored in a `config.ini` file.
-
-To configure FastAsk, run the command with the `--reset` flag:
-
+## Clearing History
 ```bash
->>> ask --reset
+>>> ask --clear
+FastAsk History Cleared.
 ```
 
-You will be prompted to choose between using your own OpenAI API key or a local model with Ollama. If you choose to use your own OpenAI API key, you will be asked to enter it.
-
-## Local Model
-
-If you choose to use a local model with Ollama, FastAsk will download and set up the local model. This may take a few minutes. If Ollama is not installed, you will be given instructions on how to install it.
-
-## OpenAI Model
-
-If you choose to use your own OpenAI API key, you will need to enter it when prompted. The API key is stored in the `config.ini` file and is used to authenticate with the OpenAI API.
 
 ## Contributing
 
