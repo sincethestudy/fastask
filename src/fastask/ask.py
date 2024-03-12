@@ -9,16 +9,15 @@ from .utils import ensure_config_exists, load_config, save_config, get_last_n_hi
 from .dev_mode_router import dev_endpoint
 
 def check_and_run_command(history, question):
-    # Check if the question is 'last'
-    if question.lower() == 'last':
+    if question.lower() == 'history':
         history = get_last_n_history(1)
         if history:
             prev_answer = json.loads(history[-1]["Answer"])
             for i, item  in enumerate(prev_answer):
                 print(str(i+1)+". " + "\'" + item['command'] + "\'" + " - " + item['desc'])
-                print()
         else:
             print("No history available.")
+        print()
         exit()
 
     # Check if the question can be converted to an integer
@@ -31,6 +30,7 @@ def check_and_run_command(history, question):
             answer_json = json.loads(answer)
             if index <= len(answer_json):
                 command = answer_json[index-1]["command"]
+                print("\033[94mrunning `" + command + "`...\033[0m")
                 os.system(command)
             else:
                 print("No command at this index in the answer.")
