@@ -82,6 +82,15 @@ and then a second query can be like:
 2. 'conda list' - List for conda envs.
 ```
 
+you can also re-print the last output fastask gave with:
+
+```bash
+>>> ask history
+1. 'pip list' - List for pip packages.
+2. 'conda list' - List for conda envs.
+```
+
+
 If something weird is occuring/having weird errors, try clearing your history.
 
 ```bash
