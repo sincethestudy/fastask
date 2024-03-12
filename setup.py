@@ -12,6 +12,8 @@ setup(
     include_package_data=True,
     install_requires=[
         'requests',
+        'openai',
+        'dotenv',
     ],
     entry_points={
         'console_scripts': [

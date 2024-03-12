@@ -1,48 +1,97 @@
-import sys
+from openai import AzureOpenAI, OpenAI
+from dotenv import load_dotenv
 import os
-import argparse
 import platform
-import json
 import requests
+import json 
 
-from .utils import ensure_config_exists, load_config, save_config, get_last_n_history, clear_history, add_to_history
-from .dev_mode_router import dev_endpoint
-from .version import __version__
+from .utils import get_last_n_history, add_to_history
 
-def check_and_run_command(history, question):
-    # Check if the question is 'last'
-    if question.lower() == 'last':
-        history = get_last_n_history(1)
-        if history:
-            prev_answer = json.loads(history[-1]["Answer"])
-            for i, item  in enumerate(prev_answer):
-                print(str(i+1)+". " + "\'" + item['command'] + "\'" + " - " + item['desc'])
-                print()
-        else:
-            print("No history available.")
-        exit()
+load_dotenv()
 
-    # Check if the question can be converted to an integer
-    try:
-        index = int(question)
-        history = get_last_n_history(5)
+def AZURE_client(messages):
+    print("\033[91mFASTASK-dev-mode: Using Azure OpenAI\033[0m")
+    api_key=os.environ.get("AZURE_OPENAI_API_KEY")
+    resource = os.environ.get("AZURE_RESOURCE_GROUP")
+    deployment_name=os.environ.get("AZURE_DEPLOYMENT_NAME")
 
-        if history:
-            answer = history[-1]["Answer"]
-            answer_json = json.loads(answer)
-            if index <= len(answer_json):
-                command = answer_json[index-1]["command"]
-                os.system(command)
-            else:
-                print("No command at this index in the answer.")
-        else:
-            print("No history available.")
-        exit()
-    except ValueError:
-        pass  # The question is not an integer, so we treat it as a question
+    if not api_key or not resource or not deployment_name:
+        raise ValueError("One or more environment variables are not set correctly. Please check AZURE_OPENAI_API_KEY, AZURE_RESOURCE_GROUP, and AZURE_DEPLOYMENT_NAME.")
 
-def call_the_fastest_endpoint_ever(q):
+    client = AzureOpenAI(
+        api_key=api_key,
+        api_version="2023-12-01-preview",
+        azure_endpoint = "https://{}.openai.azure.com".format(resource),
+    )
 
+    completion_stream = client.chat.completions.create(
+        messages=messages,
+        model=deployment_name,
+        stream=False,
+        user='fastaskapi'
+    )
+
+    return {"response": completion_stream.choices[0].message.content}
+
+def GROQ_client(messages):
+    print("\033[91mFASTASK-dev-mode: Using Groq\033[0m")
+    api_key=os.environ.get("GROQ_API_KEY")
+
+    if not api_key:
+        raise ValueError("One or more environment variables are not set correctly. Please check GROQ_API_KEY")
+
+    client = OpenAI(
+        # This is the default and can be omitted
+        api_key=api_key,
+        base_url="https://api.groq.com/openai/v1",
+    )
+
+    response = client.chat.completions.create(
+        messages=messages,
+        model="llama2-70b-4096",
+    )
+
+    return {"response": response.choices[0].message.content}
+
+def OPENAI_client(messages):
+    print("\033[91mFASTASK-dev-mode: Using OpenAI\033[0m")
+    api_key=os.environ.get("OPENAI_API_KEY")
+
+    if not api_key:
+        raise ValueError("One or more environment variables are not set correctly. Please check OPENAI_API_KEY")
+
+    client = OpenAI(
+        api_key=api_key,
+    )
+
+    response = client.chat.completions.create(
+        messages=messages,
+        model="gpt-3.5-turbo-0125",
+    )
+
+    return {"response": response.choices[0].message.content}
+
+def TOGETHERAI_client(messages):
+    print("\033[91mFASTASK-dev-mode: Using TogetherAI\033[0m")
+    api_key=os.environ.get("TOGETHERAI_API_KEY")
+
+    if not api_key:
+        raise ValueError("One or more environment variables are not set correctly. Please check TOGETHERAI_API_KEY")
+    
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://api.together.xyz/v1",
+    )
+
+    response = client.chat.completions.create(
+        messages=messages,
+        model="mistralai/Mixtral-8x7B-Instruct-v0.1",
+    )
+
+    return {"response": response.choices[0].message.content}
+
+# Edit this function
+def dev_endpoint(q):
     messages = []
 
     # System Prompt
@@ -108,8 +157,12 @@ Always follow this format:
         "role": "user", "content": q
     })
 
-    response = requests.post(url="https://fastask.fly.dev/itsfast", json={"messages": messages}).json()
+    # response = requests.post(url="https://fastask.fly.dev/itsfast", json={"messages": messages}).json()
     # response = requests.post(url="http://0.0.0.0:8080/itsfast", json={"messages": messages}).json()  # For local dev with a local endpoint SEE dev_mode_router.py for easier deving
+    # response = GROQ_client(messages)
+    # response = AZURE_client(messages)
+    # response = OPENAI_client(messages)
+    response = TOGETHERAI_client(messages)
     
     try:
         striped_response = json.loads(response['response'].replace('```json', '').replace('```', ''))
@@ -124,75 +177,3 @@ Always follow this format:
     print()
     print()
     add_to_history(q, response['response'])
-
-def call_dev_mode_router(q):
-    print("\033[91mFASTASK-dev-mode: Using Dev Mode Router\033[0m")
-    dev_endpoint(q)
-    
-
-def main():
-    ensure_config_exists()
-    config = load_config()
-
-    parser = argparse.ArgumentParser(
-        description='This is a command-line tool that answers questions using OpenAI or a local model.',
-        formatter_class=argparse.RawTextHelpFormatter
-    )
-
-    parser.add_argument(
-        '--version', 
-        action='version', 
-        version='%(prog)s 0.3.6'  # Add your version here
-    )
-
-    parser.add_argument(
-        '--clear',
-        action='store_true',
-        help='Clear the history of questions and answers.'
-    )
-
-    parser.add_argument(
-        '--set-dev-mode',
-        type=str,
-        choices=['true', 'false'],
-        help='Set dev mode to true or false, which allows or disallows you to use the local model.'
-    )
-
-    parser.add_argument(
-        'question',
-        nargs='*',
-        help='Enter the question you want to ask.'
-    )
-
-    args = parser.parse_args()
-
-    # If no arguments were passed, print the help message and exit
-    if len(sys.argv) == 1:
-        parser.print_help(sys.stderr)
-        sys.exit(1)
-
-    if args.clear:
-        clear_history()
-        print("FastAsk History cleared.")
-        exit()
-
-    if args.set_dev_mode:
-        config['dev_mode'] = args.set_dev_mode.lower() == 'true'
-        save_config(config)
-        print("\033[94mFastAsk Dev mode set to", config['dev_mode'], "\033[0m")
-        exit()
-
-    question = ' '.join(args.question)
-
-    history = get_last_n_history(5)
-
-    check_and_run_command(history, question)
-
-    # IF you are devving, you basically just write your own endpoint
-    if config['dev_mode']:
-        call_dev_mode_router(question)
-    else:
-        call_the_fastest_endpoint_ever(question)
-
-if __name__ == '__main__':
-    main()

@@ -4,3 +4,6 @@ config.ini
 __pycache__
 dist
 .venv
+
+.env*
+!.env.example
