@@ -1,0 +1,23 @@
+[build-system]
+requires = [
+    "setuptools",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fastask"
+version = "0.3.6"
+description = "The fastest way to get answers in the command line"
+authors = [
+    {name = "Brian Machado", email = "nah@gmail.com"},
+]
+readme = "README.md"
+dependencies = [
+    "requests",
+    "openai",
+    "python-dotenv",
+]
+
+[project.scripts]
+ask = "fastask.ask:main"

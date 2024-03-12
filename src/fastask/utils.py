@@ -77,4 +77,3 @@ def save_config(config):
     config_path = os.path.expanduser('~/.config/fastask/config.yaml')
     with open(config_path, 'w') as file:
         yaml.dump(config, file, default_flow_style=False)
-    

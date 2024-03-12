@@ -16,7 +16,7 @@ def AZURE_client(messages):
     deployment_name=os.environ.get("AZURE_DEPLOYMENT_NAME")
 
     if not api_key or not resource or not deployment_name:
-        raise ValueError("One or more environment variables are not set correctly. Please check AZURE_OPENAI_API_KEY, AZURE_RESOURCE_GROUP, and AZURE_DEPLOYMENT_NAME.")
+        raise ValueError("One or more environment variables are not set correctly. Please check AZURE_OPENAI_API_KEY, AZURE_RESOURCE_GROUP, and AZURE_DEPLOYMENT_NAME in your .env file (SEE DOCS).")
 
     client = AzureOpenAI(
         api_key=api_key,
@@ -38,7 +38,7 @@ def GROQ_client(messages):
     api_key=os.environ.get("GROQ_API_KEY")
 
     if not api_key:
-        raise ValueError("One or more environment variables are not set correctly. Please check GROQ_API_KEY")
+        raise ValueError("One or more environment variables are not set correctly. Please set GROQ_API_KEY in your .env file (SEE DOCS).")
 
     client = OpenAI(
         # This is the default and can be omitted
@@ -58,7 +58,7 @@ def OPENAI_client(messages):
     api_key=os.environ.get("OPENAI_API_KEY")
 
     if not api_key:
-        raise ValueError("One or more environment variables are not set correctly. Please check OPENAI_API_KEY")
+        raise ValueError("One or more environment variables are not set correctly. Please set OPENAI_API_KEY in your .env file (SEE DOCS).")
 
     client = OpenAI(
         api_key=api_key,
@@ -76,7 +76,7 @@ def TOGETHERAI_client(messages):
     api_key=os.environ.get("TOGETHERAI_API_KEY")
 
     if not api_key:
-        raise ValueError("One or more environment variables are not set correctly. Please check TOGETHERAI_API_KEY")
+        raise ValueError("One or more environment variables are not set correctly. Please set TOGETHERAI_API_KEY in your .env file (SEE DOCS).")
     
     client = OpenAI(
         api_key=api_key,
