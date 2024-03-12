@@ -3,9 +3,7 @@
 [Fastask.ai](https://www.fastask.ai/)
 
 
-FastAsk is a Python package that allows you to ask questions and get brief answers quickly. It uses OpenAI's GPT-3.5 model hosted on my own endpoint, for free. You can use it as a command-line utility.
-
-Logs are saved, and may be used for fine tuning in the future.
+FastAsk is a the fastest way to get answers in the command line.
 
 ## Installation
 
