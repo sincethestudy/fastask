@@ -152,6 +152,9 @@ When `set-dev-mode` is set to True, it routes the question to the `dev_endpoint`
 Currently there are a few already implemented functions, you can just uncomment any of them to try (make sure you've set the env var). 
 
 ```python
+/src/fastask/dev_mode_router.py
+line 160
+
 # response = requests.post(url="https://fastask.fly.dev/itsfast", json={"messages": messages}).json()
 # response = requests.post(url="http://0.0.0.0:8080/itsfast", json={"messages": messages}).json()
 response  =  GROQ_client(messages)
