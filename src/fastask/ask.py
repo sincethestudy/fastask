@@ -108,17 +108,21 @@ Always follow this format:
     })
 
     response = requests.post(url="https://fastask.fly.dev/itsfast", json={"messages": messages}).json()
-    # response = requests.post(url="http://0.0.0.0:8080/itsfast", json={"messages": messages}).json()  # For local dev with a local endpoint SEE dev_mode_router.py for easier deving
     
     try:
         striped_response = json.loads(response['response'].replace('```json', '').replace('```', ''))
     except:
         print(response['response'])
+        print("\033[91mhmm... something went wrong...try again maybe?\033[0m")
         exit()
 
-
-    for i, item  in enumerate(striped_response):
-        print(str(i+1)+". " + "\'" + item['command'] + "\'" + " - " + item['desc'])
+    try:
+        for i, item  in enumerate(striped_response):
+            print(str(i+1)+". " + "\'" + item['command'] + "\'" + " - " + item['desc'])
+    except:
+        print()
+        print(response['response'])
+        exit()
 
     print()
     print()
