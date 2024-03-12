@@ -149,31 +149,17 @@ and to go back:
 
 When `set-dev-mode` is set to True, it routes the question to the `dev_endpoint` in `dev_mode_router.py`, and you are expected to modify that function however you desire.
 
-Currently there are a few already implemented functions:
+Currently there are a few already implemented functions, you can just uncomment any of them to try (make sure you've set the env var). 
 
 ```python
-def OPENAI_client(messages):
-	...
-	return {"response": completion_stream.choices[0].message.content}
+# response = requests.post(url="https://fastask.fly.dev/itsfast", json={"messages": messages}).json()
+# response = requests.post(url="http://0.0.0.0:8080/itsfast", json={"messages": messages}).json()
+response  =  GROQ_client(messages)
+# response = AZURE_client(messages)
+# response = OPENAI_client(messages)
+# response = TOGETHERAI_client(messages)
 ```
 
-```python
-def AZURE_client(messages):
-	...
-	return {"response": completion_stream.choices[0].message.content}
-```
-
-```python
-def GROQ_client(messages):
-	...
-	return {"response": completion_stream.choices[0].message.content}
-```
-
-```python
-def TOGETHERAI_client(messages):
-	...
-	return {"response": completion_stream.choices[0].message.content}
-```
 
 You can add others, for example, adding a `OLLAMA_client` would be a good next step.
 
