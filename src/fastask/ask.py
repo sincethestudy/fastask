@@ -120,8 +120,8 @@ Always follow this format:
         for i, item  in enumerate(striped_response):
             print(str(i+1)+". " + "\'" + item['command'] + "\'" + " - " + item['desc'])
     except:
-        print()
         print(response['response'])
+        print("\033[91mhmm... something went wrong...try again maybe?\033[0m")
         exit()
 
     print()
