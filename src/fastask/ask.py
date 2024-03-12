@@ -145,7 +145,7 @@ def main():
     parser.add_argument(
         '--version', 
         action='version', 
-        version='%(prog)s 0.4.1'  # Add your version here
+        version='%(prog)s 0.4.2'  # Add your version here
     )
 
     parser.add_argument(
