@@ -7,7 +7,6 @@ import requests
 
 from .utils import ensure_config_exists, load_config, save_config, get_last_n_history, clear_history, add_to_history
 from .dev_mode_router import dev_endpoint
-from .version import __version__
 
 def check_and_run_command(history, question):
     # Check if the question is 'last'
@@ -142,7 +141,7 @@ def main():
     parser.add_argument(
         '--version', 
         action='version', 
-        version='%(prog)s 0.3.6'  # Add your version here
+        version='%(prog)s 0.4.0'  # Add your version here
     )
 
     parser.add_argument(
