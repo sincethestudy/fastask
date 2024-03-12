@@ -102,6 +102,33 @@ its because of how args are parsed in the actual zsh/bash itself. If you want to
 >>> ask "what is rebase?"
 ```
 
+## Developing Locally
+
+To make edits to fastask:
+
+1. Clone this repo
+```bash
+git clone https://github.com/sincethestudy/fastask.git
+```
+
+2. Go to the root folder
+```bash
+cd fastask
+```
+
+3. pip install it in that directory with `"editable"` mode on on so that any changes you make automatically update the package on your system without having to install every time. 
+
+Make sure to uninstall fastask before you do this if you've already installed it before.
+```bash
+(if needed) pip uninstall fastask
+```
+
+```bash
+pip install -e .
+```
+
+Now you can edit the source code and still use the `ask` CLI command anywhere in your system on your own custom version of fastask.
+
 ## Making your own LLM endpoint
 
 We really want users to mess around and see how they can improve FastAsk. 
@@ -149,6 +176,8 @@ def TOGETHERAI_client(messages):
 ```
 
 You can add others, for example, adding a `OLLAMA_client` would be a good next step.
+
+
 
 ## Environment Variables for Dev Mode
 
