@@ -139,6 +139,18 @@ def clear_history():
         pass  # Create the file if it doesn't exist
 
 def check_and_run_command(history, question):
+    # Check if the question is 'last'
+    if question.lower() == 'last':
+        history = get_last_n_history(1)
+        if history:
+            prev_answer = json.loads(history[-1]["Answer"])
+            for i, item  in enumerate(prev_answer):
+                print(str(i+1)+". " + "\'" + item['command'] + "\'" + " - " + item['desc'])
+                print()
+        else:
+            print("No history available.")
+        exit()
+
     # Check if the question can be converted to an integer
     try:
         index = int(question)
@@ -157,7 +169,6 @@ def check_and_run_command(history, question):
         exit()
     except ValueError:
         pass  # The question is not an integer, so we treat it as a question
-
 
 
 def main():
