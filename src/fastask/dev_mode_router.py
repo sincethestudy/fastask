@@ -5,7 +5,7 @@ import platform
 import requests
 import json 
 
-from .utils import get_last_n_history, add_to_history
+from .history import History
 
 load_dotenv()
 
@@ -93,6 +93,7 @@ def TOGETHERAI_client(messages):
 # Edit this function
 def dev_endpoint(q):
     messages = []
+    history_manager = History()
 
     # System Prompt
     messages.append({
@@ -144,7 +145,7 @@ Always follow this format:
 
     ])
 
-    history = get_last_n_history(5)  # Get the last 5 entries
+    history = history_manager.get(5)  # Get the last 5 entries
 
     if history:
         for entry in history:
@@ -176,4 +177,4 @@ Always follow this format:
 
     print()
     print()
-    add_to_history(q, response['response'])
+    history_manager.add(q, response['response'])

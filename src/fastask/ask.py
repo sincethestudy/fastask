@@ -5,12 +5,16 @@ import platform
 import json
 import requests
 
-from .utils import ensure_config_exists, load_config, save_config, get_last_n_history, clear_history, add_to_history
+from .history import History
+from .config import Config
 from .dev_mode_router import dev_endpoint
+
+history_manager = History()
+config_manager = Config()
 
 def check_and_run_command(history, question):
     if question.lower() == 'history':
-        history = get_last_n_history(1)
+        history = history_manager.get(1)
         if history:
             prev_answer = json.loads(history[-1]["Answer"])
             for i, item  in enumerate(prev_answer):
@@ -23,7 +27,7 @@ def check_and_run_command(history, question):
     # Check if the question can be converted to an integer
     try:
         index = int(question)
-        history = get_last_n_history(5)
+        history = history_manager.get(5)
 
         if history:
             answer = history[-1]["Answer"]
@@ -94,7 +98,7 @@ Always follow this format:
 
     ])
 
-    history = get_last_n_history(5)  # Get the last 5 entries
+    history = history_manager.get(5)
 
     if history:
         for entry in history:
@@ -126,7 +130,7 @@ Always follow this format:
 
     print()
     print()
-    add_to_history(q, response['response'])
+    history_manager.add(q, response['response'])
 
 def call_dev_mode_router(q):
     print("\033[91mFASTASK-dev-mode: Using Dev Mode Router\033[0m")
@@ -134,8 +138,7 @@ def call_dev_mode_router(q):
     
 
 def main():
-    ensure_config_exists()
-    config = load_config()
+    config = config_manager.load()
 
     parser = argparse.ArgumentParser(
         description='This is a command-line tool that answers questions using OpenAI or a local model.',
@@ -175,19 +178,19 @@ def main():
         sys.exit(1)
 
     if args.clear:
-        clear_history()
+        history_manager.clear_history()
         print("FastAsk History cleared.")
         exit()
 
     if args.set_dev_mode:
         config['dev_mode'] = args.set_dev_mode.lower() == 'true'
-        save_config(config)
+        config_manager.save(config)
         print("\033[94mFastAsk Dev mode set to", config['dev_mode'], "\033[0m")
         exit()
 
     question = ' '.join(args.question)
 
-    history = get_last_n_history(5)
+    history = history_manager.get(5)
 
     check_and_run_command(history, question)
 
