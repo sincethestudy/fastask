@@ -6,7 +6,7 @@ class Config:
         self.config_dir = os.path.expanduser('~/.config/fastask')
         self.config_path = os.path.join(self.config_dir, 'config.yaml')
         self.default_config = {
-            'dev_mode': False,
+            'llm': 'fastask',
         }
         if not os.path.exists(self.config_dir):
             os.makedirs(self.config_dir)
