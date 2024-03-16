@@ -173,28 +173,26 @@ Always follow this format:
         "role": "user", "content": q
     })
 
-    if client_type == "fastask":
-        client = FastAskClient()
-    elif client_type == "fastask-local":
-        client = FastAskLocalClient()
-    elif client_type == "azure":
-        client = AzureClient()
-    elif client_type == "groq":
-        client = GroqClient()
-    elif client_type == "openai":
-        client = OpenAIClient()
-    elif client_type == "togetherai":
-        client = TogetherAIClient()
-    else:
+    client = {
+        "fastask": FastAskClient(),
+        "fastask-local": FastAskLocalClient(),
+        "azure": AzureClient(),
+        "groq": GroqClient(),
+        "openai": OpenAIClient(),
+        "togetherai": TogetherAIClient()
+    }.get(client_type)
+
+    if not client:
         raise ValueError("Invalid client type specified.")
 
     response = client.create_client(messages)
 
     try:
-        if client_type == 'fastask' or client_type == 'fastask-local':
+        if client_type in ['fastask', 'fastask-local']:
             striped_response = json.loads(response['response'].replace('```json', '').replace('```', ''))
-            for i, item  in enumerate(striped_response):
-                print(str(i+1)+". " + "\'" + item['command'] + "\'" + " - " + item['desc'])
+            for i, item in enumerate(striped_response):
+                print(f"{i+1}. '{item['command']}' - {item['desc']}")
+            history_manager.add(q, response['response'])
         else:
             print(response['response'])
     except:
@@ -203,4 +201,3 @@ Always follow this format:
 
     print()
     print()
-    history_manager.add(q, response['response'])

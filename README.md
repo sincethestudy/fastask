@@ -138,19 +138,19 @@ pip install -e .
 
 Now you can edit the source code and still use the `ask` CLI command anywhere in your system on your own custom version of fastask.
 
-## Making your own LLM endpoint
+## Using a different LLM
 
 We really want users to mess around and see how they can improve FastAsk. 
 
 There is a `llm.py` file which is essentially a playground file for you to write your own endpoint function. For example, adding an `OLLAMA_client` would be a good next step.
 
-To use the free FastAsk API server (default):
+**To use the free FastAsk API server (default):**
 
 ```bash
 >>>ask --llm=fastask
 ```
 
-To use your self-hosted FastAsk API server:
+**To use your self-hosted FastAsk API server:**
 
 ```bash
 >>>ask --llm=fastask-local
@@ -158,7 +158,7 @@ To use your self-hosted FastAsk API server:
 
 Note: This requires you to have the FastAsk API running locally on port 8080.
 
-To use another LLM such as Groq:
+**To use another LLM such as Groq:**
 
 ```bash
 >>>ask --llm=groq
