@@ -138,50 +138,33 @@ pip install -e .
 
 Now you can edit the source code and still use the `ask` CLI command anywhere in your system on your own custom version of fastask.
 
-## Making your own LLM endpoint
+## Using a different LLM
 
 We really want users to mess around and see how they can improve FastAsk. 
 
-There is a `dev_mode_router.py` file which is essentially a playground file for you to write your own endpoint function. 
+There is a `llm.py` file which is essentially a playground file for you to write your own endpoint function. For example, adding an `OLLAMA_client` would be a good next step.
 
-To switch from using the default external server LLM:
-
-```bash
->>>ask --set-dev-mode=true
-```
-
-and to go back:
+**To use the free FastAsk API server (default):**
 
 ```bash
->>>ask --set-dev-mode=false
+>>>ask --llm=fastask
 ```
 
-When `set-dev-mode` is set to True, it routes the question to the `dev_endpoint` in `dev_mode_router.py`, and you are expected to modify that function however you desire.
+**To use your self-hosted FastAsk API server:**
 
-Currently there are a few already implemented functions, you can just uncomment any of them to try (make sure you've set the env var). 
-
-```python
-/src/fastask/dev_mode_router.py
-line 160
-
-# response = requests.post(url="https://fastask.fly.dev/itsfast", json={"messages": messages}).json()
-# response = requests.post(url="http://0.0.0.0:8080/itsfast", json={"messages": messages}).json()
-response  =  GROQ_client(messages)
-# response = AZURE_client(messages)
-# response = OPENAI_client(messages)
-# response = TOGETHERAI_client(messages)
+```bash
+>>>ask --llm=fastask-local
 ```
 
+Note: This requires you to have the FastAsk API running locally on port 8080.
 
-You can add others, for example, adding a `OLLAMA_client` would be a good next step.
+**To use another LLM such as Groq:**
 
+```bash
+>>>ask --llm=groq
+```
 
-
-## Environment Variables for Dev Mode
-
-You need to set the environment variables in the `.env` for each of those clients that you plan on using (or if you make your own). 
-
-There is a `.env.example` in this repo, just copy the contents into a new `.env` file and populate the keys you need.
+Note: This requires you to provide API keys through environment variables. See `.env.example`. You can set them in `.env`, or through your shell startup script (`~/.bashrc`, `~/.zshrc`, etc).
 
 ## License
 

@@ -1,16 +1,18 @@
 import sys
 import os
 import argparse
-import platform
 import json
-import requests
 
-from .utils import ensure_config_exists, load_config, save_config, get_last_n_history, clear_history, add_to_history
-from .dev_mode_router import dev_endpoint
+from .history import History
+from .config import Config
+from .llm import askLLM
+
+history_manager = History()
+config_manager = Config()
 
 def check_and_run_command(history, question):
     if question.lower() == 'history':
-        history = get_last_n_history(1)
+        history = history_manager.get(1)
         if history:
             prev_answer = json.loads(history[-1]["Answer"])
             for i, item  in enumerate(prev_answer):
@@ -23,7 +25,7 @@ def check_and_run_command(history, question):
     # Check if the question can be converted to an integer
     try:
         index = int(question)
-        history = get_last_n_history(5)
+        history = history_manager.get(5)
 
         if history:
             answer = history[-1]["Answer"]
@@ -40,102 +42,9 @@ def check_and_run_command(history, question):
     except ValueError:
         pass  # The question is not an integer, so we treat it as a question
 
-def call_the_fastest_endpoint_ever(q):
-
-    messages = []
-
-    # System Prompt
-    messages.append({
-        "role": "system", "content": """You are a command line utility that answers questions quickly and briefly in JSON format.
-
-If there were a few commands you could have given, show them all. Remember that you print to a console, so make it easy to read when possible. The user is on the operating system: """ + platform.system() + """. Bias towards short answers always, each row should fit in one unwrapped line of the terminal, less than 40 characters! Only 3 rows maximum.
-
-Always follow this format:
-
-[
-{"command": <command string>:, "desc": <description string>}
-]"""
-    })
-
-    # Fake Examples
-    messages.extend([
-        {"role": "user", "content": "how do i convert image size in ffmpeg"},
-        {"role": "assistant", "content":"""[
-{"command": "ffmpeg -i input.jpg -filter:v scale=h=1024 output.jpg", "desc": "Resizes the image to a height of 1024 pixels."},
-{"command": "ffmpeg -i input.jpg -filter:v scale=w:h=1:1 output.jpg", "desc": "Resizes image to width and height that are equal"},
-{"command": "ffmpeg -i input.jpg -filter:v scale=force_original output.jpg", "desc": "Preserving original aspect ratio."}
-]"""},
-
-        {"role": "user", "content": "list items in dir by date"},
-        {"role": "assistant", "content":"""[
-{"command": "ls -lt", "desc": "List items sorted by date (newest first)."},
-{"command": "ls -ltr", "desc": "Added 'r' sorts by oldest first."}
-]"""},
-
-        {"role": "user", "content": "how do i make a new docker to run a fresh ubuntu to test on"},
-        {"role": "assistant", "content":"""[
-{"command": "docker run -it ubuntu", "desc": "Runs a new Docker container with Ubuntu."},
-{"command": "docker run -it ubuntu bash", "desc": "also opens a bash shell."}
-]"""},
-
-        {"role": "user", "content": "find text in files in linux"},
-        {"role": "assistant", "content":"""[
-{"command": "grep 'text' *", "desc": "Search in current directory."},
-{"command": "grep -r 'text' .", "desc": "Recursive search."},
-{"command": "find / -type f -exec grep -l 'text' {} +", "desc": "Find in all files."}
-]"""},
-
-        {"role": "user", "content": "how to change file permissions in linux"},
-        {"role": "assistant", "content":"""[
-{"command": "chmod 755 filename", "desc": "rwx for owner, rx for others."},
-{"command": "chmod +x filename", "desc": "Make file executable for all."},
-{"command": "chmod u+w,g-w,o=r filename", "desc": "Set specific permissions."}
-]"""}
-
-    ])
-
-    history = get_last_n_history(5)  # Get the last 5 entries
-
-    if history:
-        for entry in history:
-            messages.extend([
-                {"role": "user", "content": entry["Question"]},
-                {"role": "assistant", "content": entry["Answer"]}
-            ])
-
-    messages.append({
-        "role": "user", "content": q
-    })
-
-    response = requests.post(url="https://fastask.fly.dev/itsfast", json={"messages": messages}).json()
-    
-    try:
-        striped_response = json.loads(response['response'].replace('```json', '').replace('```', ''))
-    except:
-        print(response['response'])
-        print("\033[91mhmm... something went wrong...try again maybe?\033[0m")
-        exit()
-
-    try:
-        for i, item  in enumerate(striped_response):
-            print(str(i+1)+". " + "\'" + item['command'] + "\'" + " - " + item['desc'])
-    except:
-        print(response['response'])
-        print("\033[91mhmm... something went wrong...try again maybe?\033[0m")
-        exit()
-
-    print()
-    print()
-    add_to_history(q, response['response'])
-
-def call_dev_mode_router(q):
-    print("\033[91mFASTASK-dev-mode: Using Dev Mode Router\033[0m")
-    dev_endpoint(q)
-    
 
 def main():
-    ensure_config_exists()
-    config = load_config()
+    config = config_manager.load()
 
     parser = argparse.ArgumentParser(
         description='This is a command-line tool that answers questions using OpenAI or a local model.',
@@ -155,10 +64,10 @@ def main():
     )
 
     parser.add_argument(
-        '--set-dev-mode',
+        '--llm',
         type=str,
-        choices=['true', 'false'],
-        help='Set dev mode to true or false, which allows or disallows you to use the local model.'
+        choices=['fastask', 'fastask-local', 'azure', 'groq', 'openai', 'togetherai'],
+        help='Select the large language model to use. Default is fastask. All other models and are intended for developer use and require API keys.'
     )
 
     parser.add_argument(
@@ -175,27 +84,29 @@ def main():
         sys.exit(1)
 
     if args.clear:
-        clear_history()
+        history_manager.clear_history()
         print("FastAsk History cleared.")
         exit()
 
-    if args.set_dev_mode:
-        config['dev_mode'] = args.set_dev_mode.lower() == 'true'
-        save_config(config)
-        print("\033[94mFastAsk Dev mode set to", config['dev_mode'], "\033[0m")
+    # use fastask as llm by default if no llm is set
+    try:
+        llm = config['llm']
+    except:
+        config['llm'] = 'fastask'
+        config_manager.save(config)
+
+
+    if args.llm:
+        config['llm'] = args.llm.lower()
+        config_manager.save(config)
+        print("\033[94mFastAsk LLM set to", config['llm'], "\033[0m")
         exit()
 
     question = ' '.join(args.question)
-
-    history = get_last_n_history(5)
-
+    history = history_manager.get(5)
     check_and_run_command(history, question)
-
-    # IF you are devving, you basically just write your own endpoint
-    if config['dev_mode']:
-        call_dev_mode_router(question)
-    else:
-        call_the_fastest_endpoint_ever(question)
+    askLLM(question, config['llm'])
+        
 
 if __name__ == '__main__':
     main()
