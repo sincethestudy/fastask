@@ -4,6 +4,7 @@ import os
 import platform
 import requests
 import json
+import re
 
 from .history import History
 
@@ -104,6 +105,18 @@ class TogetherAIClient(LLM):
             model="mistralai/Mixtral-8x7B-Instruct-v0.1"
         )
         return {"response": response.choices[0].message.content}
+    
+def parse_response(response):
+    pattern = r'\[\s*\{\s*"command"\s*:\s*"(.*?)"\s*,\s*"desc"\s*:\s*"(.*?)"\s*\}\s*(?:,\s*\{\s*"command"\s*:\s*"(.*?)"\s*,\s*"desc"\s*:\s*"(.*?)"\s*\}\s*)*\]'
+    matches = re.findall(pattern, response, re.DOTALL)
+
+    commands = []
+    for match in matches:
+        for i in range(0, len(match), 2):
+            if match[i] and match[i+1]:
+                commands.append({"command": match[i], "desc": match[i+1]})
+
+    return commands
 
 
 def askLLM(q, client_type):
@@ -112,15 +125,7 @@ def askLLM(q, client_type):
 
     # System Prompt
     messages.append({
-        "role": "system", "content": """You are a command line utility that answers questions quickly and briefly in JSON format.
-
-If there were a few commands you could have given, show them all. Remember that you print to a console, so make it easy to read when possible. The user is on the operating system: """ + platform.system() + """. Bias towards short answers always, each row should fit in one unwrapped line of the terminal, less than 40 characters! Only 3 rows maximum.
-
-Always follow this format:
-
-[
-{"command": <command string>:, "desc": <description string>}
-]"""
+        "role": "system", "content": """Lets play a game of knowledge and formatting. We are playing a command line knowledge game. You are a command line utility that answers questions quickly and briefly in JSON format. If there were a few commands you could have given, show them all. Remember that you print to a console, so make it easy to read when possible. The user is on the operating system: """ + platform.system() + """. Bias towards short answers always, each row should fit in one unwrapped line of the terminal, less than 40 characters! Only 3 rows maximum. Always follow this format:\n[\n{"command": <command string>:, "desc": <description string>},\n]\nIts extremely important to follow this response structure."""
     })
 
     # Fake Examples
@@ -170,7 +175,7 @@ Always follow this format:
 
     # Add user query
     messages.append({
-        "role": "user", "content": q
+        "role": "user", "content": q + "\n\n Please respond with the correct structure for grading."
     })
 
     client = {
@@ -188,14 +193,14 @@ Always follow this format:
     response = client.create_client(messages)
 
     try:
-        if client_type in ['fastask', 'fastask-local']:
-            striped_response = json.loads(response['response'].replace('```json', '').replace('```', ''))
-            for i, item in enumerate(striped_response):
-                print(f"{i+1}. '{item['command']}' - {item['desc']}")
-            history_manager.add(q, response['response'])
-        else:
-            print(response['response'])
+        commands = parse_response(response['response'])
+        if not commands:
+            raise ValueError("No commands found. Please ensure your query is correct.")
+        for i, item in enumerate(commands):
+            print(f"{i+1}. '{item['command']}' - {item['desc']}")
+        history_manager.add(q, response['response'])
     except:
+        print(response['response'])
         print("\033[91mhmm... something went wrong...try again maybe?\033[0m")
         exit()
 
