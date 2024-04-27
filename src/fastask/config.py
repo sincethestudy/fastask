@@ -7,6 +7,8 @@ class Config:
         self.config_path = os.path.join(self.config_dir, 'config.yaml')
         self.default_config = {
             'llm': 'fastask',
+            'enable_leaderboard': False,
+            'user': ''
         }
         if not os.path.exists(self.config_dir):
             os.makedirs(self.config_dir)
@@ -22,3 +24,5 @@ class Config:
     def save(self, config):
         with open(self.config_path, 'w') as file:
             yaml.dump(config, file, default_flow_style=False)
+
+    

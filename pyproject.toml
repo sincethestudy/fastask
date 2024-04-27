@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fastask"
-version = "0.4.6"
+version = "0.4.7"
 description = "The fastest way to get answers in the command line"
 authors = [
     {name = "Brian Machado", email = "nah@gmail.com"},

@@ -69,6 +69,19 @@ def main():
         choices=['fastask', 'fastask-local', 'azure', 'groq', 'openai', 'togetherai'],
         help='Select the large language model to use. Default is fastask. All other models and are intended for developer use and require API keys.'
     )
+    
+    parser.add_argument(
+        '--enable-leaderboard',
+        type=bool,
+        default=False,
+        help='Enable the leaderboard.'
+    )
+
+    parser.add_argument(
+        '--set-user',
+        type=str,
+        help='Specify a custom config file to use.'
+    )
 
     parser.add_argument(
         'question',
@@ -86,6 +99,18 @@ def main():
     if args.clear:
         history_manager.clear_history()
         print("FastAsk History cleared.")
+        exit()
+        
+    if args.enable_leaderboard:
+        config['enable_leaderboard'] = True
+        config_manager.save(config)
+        print("\033[92mLeaderboard enabled.\033[0m")
+        exit()
+        
+    if args.set_user:
+        config['user'] = args.set_user
+        config_manager.save(config)
+        print("\033[92mUser set to", config['user'], "\033[0m")
         exit()
 
     # use fastask as llm by default if no llm is set

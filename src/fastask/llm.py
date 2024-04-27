@@ -7,8 +7,12 @@ import json
 import re
 
 from .history import History
+from .config import Config
 
 load_dotenv()
+
+config_manager = Config()
+config = config_manager.load()
 
 class LLM:
     def __init__(self, name):
@@ -22,8 +26,12 @@ class FastAskClient(LLM):
         super().__init__("FastAsk")
 
     def create_client(self, messages):
-        response = requests.post(url="https://fastask.fly.dev/itsfast", json={"messages": messages}).json()
-        return response
+        if config['enable_leaderboard']:
+            response = requests.post(url="https://fastask.fly.dev/itsfast", json={"messages": messages, "user": config['user'], "log": True}).json()
+            return response
+        else:
+            response = requests.post(url="https://fastask.fly.dev/itsfast", json={"messages": messages}).json()
+            return response
 
 class FastAskLocalClient(LLM):
     def __init__(self):
@@ -31,7 +39,12 @@ class FastAskLocalClient(LLM):
 
     def create_client(self, messages):
         self.using()
-        response = requests.post(url="http://0.0.0.0:8080/itsfast", json={"messages": messages}).json()
+        
+        if config['enable_leaderboard']==True:
+            response = requests.post(url="http://0.0.0.0:8080/itsfast", json={"messages": messages, "user": config['user'], "log": True}).json()
+            return response
+        else:
+            response = requests.post(url="http://0.0.0.0:8080/itsfast", json={"messages": messages}).json()
         return response
 
 class AzureClient(LLM):
@@ -193,7 +206,7 @@ def askLLM(q, client_type):
     response = client.create_client(messages)
 
     try:
-        commands = parse_response(response['response'])
+        commands = parse_response(response["response"])
         if not commands:
             raise ValueError("No commands found. Please ensure your query is correct.")
         for i, item in enumerate(commands):
