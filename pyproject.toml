@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fastask"
-version = "0.4.7"
+version = "0.4.8"
 description = "The fastest way to get answers in the command line"
 authors = [
     {name = "Brian Machado", email = "nah@gmail.com"},
@@ -16,6 +16,7 @@ readme = "README.md"
 dependencies = [
     "requests",
     "openai",
+    "anthropic",
     "python-dotenv",
     "pyyaml"
 ]

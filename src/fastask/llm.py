@@ -1,4 +1,5 @@
 from openai import AzureOpenAI, OpenAI
+from anthropic import Anthropic
 from dotenv import load_dotenv
 import os
 import platform
@@ -118,7 +119,38 @@ class TogetherAIClient(LLM):
             model="mistralai/Mixtral-8x7B-Instruct-v0.1"
         )
         return {"response": response.choices[0].message.content}
-    
+
+class AnthropicClient(LLM):
+    def __init__(self):
+        super().__init__("Anthropic Claude")
+        self.api_key = os.environ.get("ANTHROPIC_API_KEY")
+
+    def create_client(self, messages):
+        self.using()
+        client = Anthropic(api_key=self.api_key)
+
+        # Convert OpenAI message format to Anthropic format
+        system_prompt = next(
+            (msg["content"] for msg in messages if msg["role"] == "system"), None
+        )
+        conversation = []
+
+        for msg in messages:
+            if msg["role"] == "user":
+                conversation.append({"role": "user", "content": msg["content"]})
+            elif msg["role"] == "assistant":
+                conversation.append({"role": "assistant", "content": msg["content"]})
+
+        # Create the message with system prompt if present
+        response = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            system=system_prompt,
+            messages=conversation,
+            max_tokens=1024,
+        )
+
+        return {"response": response.content[0].text}
+
 def parse_response(response):
     pattern = r'\[\s*\{\s*"command"\s*:\s*"(.*?)"\s*,\s*"desc"\s*:\s*"(.*?)"\s*\}\s*(?:,\s*\{\s*"command"\s*:\s*"(.*?)"\s*,\s*"desc"\s*:\s*"(.*?)"\s*\}\s*)*\]'
     matches = re.findall(pattern, response, re.DOTALL)
@@ -197,7 +229,8 @@ def askLLM(q, client_type):
         "azure": AzureClient(),
         "groq": GroqClient(),
         "openai": OpenAIClient(),
-        "togetherai": TogetherAIClient()
+        "togetherai": TogetherAIClient(),
+        "anthropic": AnthropicClient(),
     }.get(client_type)
 
     if not client:
