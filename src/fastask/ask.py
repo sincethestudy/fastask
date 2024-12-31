@@ -66,10 +66,10 @@ def main():
     parser.add_argument(
         '--llm',
         type=str,
-        choices=['fastask', 'fastask-local', 'azure', 'groq', 'openai', 'togetherai'],
+        choices=['fastask', 'fastask-local', 'azure', 'groq', 'openai', 'togetherai', 'anthropic'],
         help='Select the large language model to use. Default is fastask. All other models and are intended for developer use and require API keys.'
     )
-    
+
     parser.add_argument(
         '--enable-leaderboard',
         type=bool,
