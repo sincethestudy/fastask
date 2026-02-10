@@ -12,8 +12,19 @@ However, its very easy to clone this and run whatever LLM you want, we have preb
 
 ## Installation
 
+The recommended way to install FastAsk is with [pipx](https://pipx.pypa.io/), which installs it in an isolated environment and makes the `ask` command available globally:
 
-FastAsk can be installed using pip:
+```bash
+pipx install fastask
+```
+
+To update to the latest version:
+
+```bash
+pipx upgrade fastask
+```
+
+Alternatively, you can install with pip:
 
 ```bash
 pip install fastask

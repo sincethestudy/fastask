@@ -83,7 +83,7 @@ class GroqClient(LLM):
         )
         response = client.chat.completions.create(
             messages=messages,
-            model="llama2-70b-4096"
+            model="llama-3.3-70b-versatile"
         )
         return {"response": response.choices[0].message.content}
 
